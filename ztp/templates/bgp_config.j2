@@ -1,0 +1,23 @@
+!
+! ============================================
+! BGP Configuration
+! ============================================
+!
+router bgp {{ bgp.asn }}
+ bgp router-id {{ device.mgmt_ip }}
+ bgp log-neighbor-changes
+ !
+ {% for neighbor in bgp.neighbors %}
+ neighbor {{ neighbor.ip }} remote-as {{ neighbor.remote_as }}
+ neighbor {{ neighbor.ip }} description Peer_{{ neighbor.remote_as }}
+ neighbor {{ neighbor.ip }} timers 30 90
+ neighbor {{ neighbor.ip }} advertisement-interval 30
+ {% endfor %}
+ !
+ address-family ipv4
+  {% for neighbor in bgp.neighbors %}
+  neighbor {{ neighbor.ip }} activate
+  {% endfor %}
+  network 10.10.0.0 mask 255.255.0.0
+ exit-address-family
+!

@@ -1,0 +1,204 @@
+# ============================================================
+# GitLab CI/CD Pipeline - Network Automation Suite
+# Network Engineer: Israr Sadaq
+# Automated testing, deployment, and validation
+# ============================================================
+
+stages:
+  - validate
+  - test
+  - build
+  - deploy
+  - monitor
+
+variables:
+  DOCKER_IMAGE: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
+  ANSIBLE_HOST_KEY_CHECKING: "false"
+
+# ============================================================
+# Cache for dependencies
+# ============================================================
+cache:
+  paths:
+    - .pip-cache/
+    - .ansible-cache/
+
+# ============================================================
+# Stage 1: Validate YAML and Python Syntax
+# ============================================================
+validate:yaml:
+  stage: validate
+  image: python:3.9-slim
+  before_script:
+    - pip install pyyaml
+  script:
+    - echo "Validating YAML files..."
+    - python -c "import yaml; yaml.safe_load(open('inventory/devices.yml'))"
+    - python -c "import yaml; yaml.safe_load(open('monitoring/prometheus/prometheus.yml'))"
+    - echo "✓ YAML validation passed"
+  only:
+    - merge_requests
+    - main
+
+validate:python:
+  stage: validate
+  image: python:3.9-slim
+  script:
+    - echo "Validating Python syntax..."
+    - python -m py_compile ztp/ztp_deploy.py
+    - python -m py_compile performance/latency_framework.py
+    - echo "✓ Python syntax validation passed"
+  only:
+    - merge_requests
+    - main
+
+validate:ansible:
+  stage: validate
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache ansible
+  script:
+    - echo "Validating Ansible playbooks..."
+    - ansible-playbook ansible/playbooks/site.yml --syntax-check
+    - ansible-playbook ansible/playbooks/backup.yml --syntax-check
+    - echo "✓ Ansible syntax validation passed"
+  only:
+    - merge_requests
+    - main
+
+# ============================================================
+# Stage 2: Test Automation Scripts
+# ============================================================
+test:ztp:
+  stage: test
+  image: python:3.9-slim
+  before_script:
+    - pip install -r requirements.txt
+  script:
+    - echo "Testing ZTP configuration generation..."
+    - cd ztp
+    - python -c "from ztp_deploy import ZeroTouchProvisioning; ztp = ZeroTouchProvisioning('../inventory/devices.yml'); config = ztp.generate_config(ztp.inventory['devices'][0]); assert 'hostname' in config"
+    - echo "✓ ZTP test passed"
+  only:
+    - merge_requests
+    - main
+
+test:performance:
+  stage: test
+  image: python:3.9-slim
+  before_script:
+    - apt-get update && apt-get install -y iperf3
+    - pip install iperf3 requests
+  script:
+    - echo "Testing performance framework..."
+    - cd performance
+    - python -c "from latency_framework import PerformanceMonitor; p = PerformanceMonitor(); assert p is not None"
+    - echo "✓ Performance test passed"
+  only:
+    - merge_requests
+    - main
+
+# ============================================================
+# Stage 3: Build Docker Image
+# ============================================================
+build:docker:
+  stage: build
+  image: docker:latest
+  services:
+    - docker:dind
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  script:
+    - echo "Building Docker image..."
+    - docker build -t $DOCKER_IMAGE -f docker/Dockerfile .
+    - docker push $DOCKER_IMAGE
+    - echo "✓ Docker image built and pushed"
+  only:
+    - main
+
+# ============================================================
+# Stage 4: Deploy Monitoring Stack
+# ============================================================
+deploy:monitoring:
+  stage: deploy
+  image: docker:latest
+  services:
+    - docker:dind
+  before_script:
+    - apk add --no-cache docker-compose
+  script:
+    - echo "Deploying monitoring stack..."
+    - cd docker
+    - docker-compose pull
+    - docker-compose up -d
+    - echo "✓ Monitoring stack deployed"
+  only:
+    - main
+  when: manual
+
+deploy:automation:
+  stage: deploy
+  image: docker:latest
+  script:
+    - echo "Deploying automation container..."
+    - docker pull $DOCKER_IMAGE
+    - docker stop network-automation || true
+    - docker rm network-automation || true
+    - docker run -d --name network-automation --network host $DOCKER_IMAGE
+    - echo "✓ Automation container deployed"
+  only:
+    - main
+  when: manual
+
+# ============================================================
+# Stage 5: Run Smoke Tests After Deployment
+# ============================================================
+monitor:health:
+  stage: monitor
+  image: alpine:latest
+  script:
+    - echo "Checking service health..."
+    - apk add --no-cache curl
+    - curl -f http://localhost:9090/-/healthy || exit 1
+    - curl -f http://localhost:3000/api/health || exit 1
+    - echo "✓ All services healthy"
+  only:
+    - main
+  needs:
+    - deploy:monitoring
+
+# ============================================================
+# Stage 5b: Generate Performance Report
+# ============================================================
+monitor:performance:
+  stage: monitor
+  image: python:3.9-slim
+  before_script:
+    - apt-get update && apt-get install -y iperf3
+    - pip install iperf3 requests
+  script:
+    - echo "Running performance tests..."
+    - cd performance
+    - python latency_framework.py --once --duration 10
+    - echo "✓ Performance tests complete"
+  artifacts:
+    paths:
+      - performance/reports/
+    expire_in: 7 days
+  only:
+    - main
+
+# ============================================================
+# Pages - Deploy Documentation
+# ============================================================
+pages:
+  stage: deploy
+  script:
+    - mkdir -p public
+    - cp -r docs/* public/ 2>/dev/null || true
+    - cp diagrams/*.html public/ 2>/dev/null || true
+  artifacts:
+    paths:
+      - public
+  only:
+    - main

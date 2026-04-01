@@ -1,0 +1,161 @@
+---
+# ============================================================
+# Main Network Automation Playbook
+# Network Engineer: Israr Sadaq
+# Manages network devices: backup, config, compliance
+# ============================================================
+
+- name: Network Automation - Core and Distribution
+  hosts: core, distribution
+  gather_facts: no
+  vars:
+    backup_dir: /backups/network_configs
+    date: "{{ ansible_date_time.date }}"
+    
+  tasks:
+    # Task 1: Backup device configurations
+    - name: Backup device configuration
+      cisco.ios.ios_config:
+        backup: yes
+        backup_options:
+          filename: "{{ inventory_hostname }}_{{ date }}.cfg"
+          dir_path: "{{ backup_dir }}"
+      register: backup_result
+      tags: backup
+
+    # Task 2: Display backup status
+    - name: Show backup result
+      debug:
+        msg: "Backup saved to {{ backup_result.backup_path }}"
+      when: backup_result.changed
+      tags: backup
+
+    # Task 3: Apply configuration templates
+    - name: Apply VLAN configuration
+      cisco.ios.ios_config:
+        src: "templates/vlan_config.j2"
+      when: apply_config | default(false)
+      tags: config
+
+    # Task 4: Verify BGP neighbors (for core switches)
+    - name: Check BGP neighbors status
+      cisco.ios.ios_command:
+        commands:
+          - show ip bgp summary
+      register: bgp_status
+      when: "'core' in group_names"
+      tags: verify
+
+    # Task 5: Display BGP summary
+    - name: Show BGP neighbors
+      debug:
+        var: bgp_status.stdout_lines
+      when: bgp_status is defined
+      tags: verify
+
+    # Task 6: Save running config to startup
+    - name: Save configuration
+      cisco.ios.ios_config:
+        save_when: always
+      tags: save
+
+
+- name: Network Automation - Access Switches
+  hosts: access
+  gather_facts: no
+  vars:
+    backup_dir: /backups/network_configs
+    date: "{{ ansible_date_time.date }}"
+    
+  tasks:
+    # Task 1: Backup access switch configs
+    - name: Backup access switch configuration
+      cisco.ios.ios_config:
+        backup: yes
+        backup_options:
+          filename: "{{ inventory_hostname }}_{{ date }}.cfg"
+          dir_path: "{{ backup_dir }}"
+      register: backup_result
+      tags: backup
+
+    # Task 2: Configure access ports for students
+    - name: Configure access ports
+      cisco.ios.ios_config:
+        lines:
+          - switchport mode access
+          - switchport access vlan 100
+          - spanning-tree portfast
+        parents: interface range GigabitEthernet0/1-24
+      tags: config
+
+    # Task 3: Verify interface status
+    - name: Check interface status
+      cisco.ios.ios_command:
+        commands:
+          - show interface status
+      register: interface_status
+      tags: verify
+
+    # Task 4: Show interface summary
+    - name: Display interface status
+      debug:
+        var: interface_status.stdout_lines
+      tags: verify
+
+
+- name: Network Automation - Compliance Check
+  hosts: all
+  gather_facts: no
+  vars:
+    compliance_report: "/reports/compliance_{{ ansible_date_time.date }}.txt"
+    
+  tasks:
+    # Task 1: Check running config vs startup
+    - name: Verify config sync
+      cisco.ios.ios_command:
+        commands:
+          - show running-config | diff startup-config
+      register: config_diff
+      tags: compliance
+
+    # Task 2: Check SNMP configuration
+    - name: Verify SNMP settings
+      cisco.ios.ios_command:
+        commands:
+          - show snmp
+      register: snmp_config
+      tags: compliance
+
+    # Task 3: Check logging configuration
+    - name: Verify logging settings
+      cisco.ios.ios_command:
+        commands:
+          - show logging
+      register: logging_config
+      tags: compliance
+
+    # Task 4: Generate compliance report
+    - name: Create compliance report
+      copy:
+        content: |
+          ========================================
+          COMPLIANCE REPORT - {{ ansible_date_time.date }}
+          Device: {{ inventory_hostname }}
+          ========================================
+          
+          Config Sync Status:
+          {% if config_diff.stdout[0] == "" %}
+          ✓ Running config matches startup config
+          {% else %}
+          ✗ Config mismatch detected:
+          {{ config_diff.stdout[0] }}
+          {% endif %}
+          
+          SNMP Status:
+          {{ snmp_config.stdout[0][:500] }}
+          
+          Logging Status:
+          {{ logging_config.stdout[0][:300] }}
+        dest: "{{ compliance_report }}"
+      delegate_to: localhost
+      tags: compliance

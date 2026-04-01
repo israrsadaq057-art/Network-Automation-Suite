@@ -1,0 +1,140 @@
+---
+# ============================================================
+# Network Device Backup Playbook
+# Automates daily configuration backups
+# Network Engineer: Israr Sadaq
+# ============================================================
+
+- name: Backup All Network Devices
+  hosts: all
+  gather_facts: no
+  vars:
+    backup_dir: "/backups/network_configs/{{ ansible_date_time.date }}"
+    
+  tasks:
+    # Task 1: Create backup directory for today
+    - name: Create backup directory
+      file:
+        path: "{{ backup_dir }}"
+        state: directory
+        mode: '0755'
+      delegate_to: localhost
+      run_once: yes
+      tags: setup
+
+    # Task 2: Backup device configuration
+    - name: Backup device configuration
+      cisco.ios.ios_config:
+        backup: yes
+        backup_options:
+          filename: "{{ inventory_hostname }}_{{ ansible_date_time.date }}_config.cfg"
+          dir_path: "{{ backup_dir }}"
+      register: backup_result
+      tags: backup
+
+    # Task 3: Display backup status
+    - name: Display backup status
+      debug:
+        msg: "✓ {{ inventory_hostname }} backed up to {{ backup_result.backup_path }}"
+      tags: backup
+
+    # Task 4: Generate backup info file
+    - name: Generate backup info file
+      copy:
+        content: |
+          ========================================
+          NETWORK DEVICE BACKUP
+          ========================================
+          Date: {{ ansible_date_time.date }}
+          Time: {{ ansible_date_time.time }}
+          Device: {{ inventory_hostname }}
+          IP: {{ ansible_host }}
+          Backup File: {{ backup_result.backup_path }}
+          File Size: {{ backup_result.backup_file_size }} bytes
+          ========================================
+        dest: "{{ backup_dir }}/{{ inventory_hostname }}_info.txt"
+      delegate_to: localhost
+      tags: info
+
+- name: Generate Backup Summary Report
+  hosts: localhost
+  gather_facts: no
+  vars:
+    backup_root: "/backups/network_configs"
+    date: "{{ ansible_date_time.date }}"
+    
+  tasks:
+    # Task 1: Collect all backup files
+    - name: Find today's backups
+      find:
+        paths: "{{ backup_root }}/{{ date }}"
+        patterns: "*.cfg"
+      register: backup_files
+      tags: summary
+
+    # Task 2: Generate summary report
+    - name: Create backup summary
+      copy:
+        content: |
+          ========================================
+          BACKUP SUMMARY - {{ date }}
+          ========================================
+          Total Devices Backed Up: {{ backup_files.files | length }}
+          
+          Devices:
+          {% for file in backup_files.files %}
+          - {{ file.path | basename | replace('_config.cfg', '') }}
+          {% endfor %}
+          
+          Backup Location: {{ backup_root }}/{{ date }}
+          Total Size: {{ (backup_files.files | map(attribute='size') | sum / 1024) | round(2) }} KB
+          ========================================
+        dest: "{{ backup_root }}/{{ date }}/SUMMARY_{{ date }}.txt"
+      tags: summary
+
+    # Task 3: Show summary
+    - name: Display summary
+      debug:
+        msg: "✓ Backup complete! {{ backup_files.files | length }} devices backed up to {{ backup_root }}/{{ date }}"
+      tags: summary
+
+
+- name: Cleanup Old Backups (30 Days Retention)
+  hosts: localhost
+  gather_facts: no
+  vars:
+    backup_root: "/backups/network_configs"
+    retention_days: 30
+    
+  tasks:
+    # Task 1: Find old backup directories
+    - name: Find backups older than {{ retention_days }} days
+      find:
+        paths: "{{ backup_root }}"
+        file_type: directory
+        age: "{{ retention_days }}d"
+        recurse: no
+      register: old_backups
+      tags: cleanup
+
+    # Task 2: Remove old backups
+    - name: Remove old backup directories
+      file:
+        path: "{{ item.path }}"
+        state: absent
+      loop: "{{ old_backups.files }}"
+      when: old_backups.files | length > 0
+      tags: cleanup
+
+    # Task 3: Show cleanup summary
+    - name: Display cleanup summary
+      debug:
+        msg: "✓ Removed {{ old_backups.files | length }} old backup directories (older than {{ retention_days }} days)"
+      when: old_backups.files | length > 0
+      tags: cleanup
+
+    - name: No backups to clean
+      debug:
+        msg: "✓ No backups older than {{ retention_days }} days found"
+      when: old_backups.files | length == 0
+      tags: cleanup

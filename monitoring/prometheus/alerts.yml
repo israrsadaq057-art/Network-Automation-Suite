@@ -1,0 +1,180 @@
+# ============================================================
+# Prometheus Alert Rules - Network Monitoring
+# Network Engineer: Israr Sadaq
+# Real-time alerts for network issues
+# ============================================================
+
+groups:
+  # Network Device Alerts
+  - name: network_device_alerts
+    interval: 30s
+    rules:
+      # Device Down Alert
+      - alert: DeviceDown
+        expr: up == 0
+        for: 2m
+        labels:
+          severity: critical
+          category: availability
+        annotations:
+          summary: "Device {{ $labels.instance }} is down"
+          description: "Device {{ $labels.instance }} has been unreachable for more than 2 minutes."
+
+      # High CPU Usage
+      - alert: HighCPUUsage
+        expr: cisco_cpu_5min > 80
+        for: 5m
+        labels:
+          severity: warning
+          category: performance
+        annotations:
+          summary: "High CPU usage on {{ $labels.instance }}"
+          description: "CPU usage is {{ $value }}% on device {{ $labels.instance }} for 5 minutes."
+
+      # Interface Errors
+      - alert: InterfaceErrors
+        expr: increase(ifInErrors[5m]) > 100 or increase(ifOutErrors[5m]) > 100
+        for: 2m
+        labels:
+          severity: warning
+          category: performance
+        annotations:
+          summary: "Interface errors detected on {{ $labels.instance }}"
+          description: "High error rate detected on interface {{ $labels.interface }}"
+
+      # Interface Down
+      - alert: InterfaceDown
+        expr: ifOperStatus == 2
+        for: 1m
+        labels:
+          severity: critical
+          category: availability
+        annotations:
+          summary: "Interface {{ $labels.interface }} is down on {{ $labels.instance }}"
+          description: "Interface {{ $labels.interface }} is in down state."
+
+  # Performance Alerts
+  - name: performance_alerts
+    interval: 30s
+    rules:
+      # High Latency Alert
+      - alert: HighLatency
+        expr: network_latency_ms > 100
+        for: 5m
+        labels:
+          severity: warning
+          category: performance
+        annotations:
+          summary: "High network latency detected"
+          description: "Latency from {{ $labels.source }} to {{ $labels.destination }} is {{ $value }}ms"
+
+      # Packet Loss Alert
+      - alert: PacketLoss
+        expr: packet_loss_percent > 5
+        for: 3m
+        labels:
+          severity: critical
+          category: performance
+        annotations:
+          summary: "Packet loss detected"
+          description: "Packet loss is {{ $value }}% on path {{ $labels.source }} → {{ $labels.destination }}"
+
+      # Low Throughput Alert
+      - alert: LowThroughput
+        expr: network_throughput_mbps < 10
+        for: 5m
+        labels:
+          severity: warning
+          category: performance
+        annotations:
+          summary: "Low throughput detected"
+          description: "Throughput is {{ $value }} Mbps on path {{ $labels.source }} → {{ $labels.destination }}"
+
+  # Server Alerts
+  - name: server_alerts
+    interval: 30s
+    rules:
+      # Server Down
+      - alert: ServerDown
+        expr: node_uname_info == 0
+        for: 2m
+        labels:
+          severity: critical
+          category: availability
+        annotations:
+          summary: "Server {{ $labels.instance }} is down"
+          description: "Server has been unreachable for 2 minutes."
+
+      # High Memory Usage
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 90
+        for: 5m
+        labels:
+          severity: warning
+          category: performance
+        annotations:
+          summary: "High memory usage on {{ $labels.instance }}"
+          description: "Memory usage is {{ $value }}%"
+
+      # Disk Space Alert
+      - alert: DiskSpaceLow
+        expr: (node_filesystem_avail_bytes / node_filesystem_size_bytes) * 100 < 10
+        for: 5m
+        labels:
+          severity: warning
+          category: capacity
+        annotations:
+          summary: "Low disk space on {{ $labels.instance }}"
+          description: "Only {{ $value }}% disk space remaining on {{ $labels.mountpoint }}"
+
+  # Security Alerts
+  - name: security_alerts
+    interval: 30s
+    rules:
+      # Failed Login Attempts
+      - alert: FailedLogins
+        expr: increase(ssh_failed_logins[5m]) > 5 or increase(http_unauthorized[5m]) > 10
+        for: 1m
+        labels:
+          severity: warning
+          category: security
+        annotations:
+          summary: "Failed login attempts detected on {{ $labels.instance }}"
+          description: "{{ $value }} failed login attempts in last 5 minutes"
+
+      # Unusual Traffic Spike
+      - alert: TrafficSpike
+        expr: rate(ifInOctets[5m]) > (rate(ifInOctets[1h]) * 3)
+        for: 5m
+        labels:
+          severity: warning
+          category: security
+        annotations:
+          summary: "Unusual traffic spike detected"
+          description: "Traffic increased 300% above normal on {{ $labels.instance }}"
+
+  # Capacity Planning Alerts
+  - name: capacity_alerts
+    interval: 1h
+    rules:
+      # Bandwidth Saturation
+      - alert: BandwidthSaturation
+        expr: (ifInOctets / ifSpeed) * 100 > 80
+        for: 15m
+        labels:
+          severity: warning
+          category: capacity
+        annotations:
+          summary: "Bandwidth saturation on {{ $labels.instance }}"
+          description: "Interface utilization is {{ $value }}%"
+
+      # Port Usage High
+      - alert: PortUsageHigh
+        expr: (number_of_active_ports / total_ports) * 100 > 90
+        for: 1h
+        labels:
+          severity: warning
+          category: capacity
+        annotations:
+          summary: "High port utilization on {{ $labels.instance }}"
+          description: "{{ $value }}% of ports are in use"

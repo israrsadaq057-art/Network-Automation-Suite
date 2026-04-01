@@ -1,0 +1,81 @@
+# Network Device Inventory for ZTP
+# Network Engineer: Israr Sadaq
+
+devices:
+  # Core Switch
+  - name: core-sw-01
+    mgmt_ip: 10.10.10.1
+    device_type: cisco_ios
+    username: admin
+    password: P@ssw0rd
+    enable_password: P@ssw0rd
+    vlans:
+      - id: 10
+        name: Management
+      - id: 20
+        name: Data
+      - id: 30
+        name: Voice
+    bgp:
+      asn: 65001
+      neighbors:
+        - ip: 10.10.10.2
+          remote_as: 65002
+        - ip: 10.10.10.3
+          remote_as: 65003
+
+  # Distribution Switch Floor 1
+  - name: dist-sw-f1
+    mgmt_ip: 10.10.10.11
+    device_type: cisco_ios
+    username: admin
+    password: P@ssw0rd
+    enable_password: P@ssw0rd
+    vlans:
+      - id: 10
+        name: Management
+      - id: 50
+        name: Floor1_Users
+      - id: 60
+        name: Floor1_Cameras
+
+  # Distribution Switch Floor 2
+  - name: dist-sw-f2
+    mgmt_ip: 10.10.10.12
+    device_type: cisco_ios
+    username: admin
+    password: P@ssw0rd
+    enable_password: P@ssw0rd
+    vlans:
+      - id: 10
+        name: Management
+      - id: 70
+        name: Floor2_Users
+      - id: 80
+        name: Floor2_Cameras
+
+  # Access Switch Lab-101
+  - name: access-lab-101
+    mgmt_ip: 10.10.10.101
+    device_type: cisco_ios
+    username: admin
+    password: P@ssw0rd
+    enable_password: P@ssw0rd
+    vlans:
+      - id: 10
+        name: Management
+      - id: 100
+        name: Lab_Students
+
+  # Access Switch Lab-102
+  - name: access-lab-102
+    mgmt_ip: 10.10.10.102
+    device_type: cisco_ios
+    username: admin
+    password: P@ssw0rd
+    enable_password: P@ssw0rd
+    vlans:
+      - id: 10
+        name: Management
+      - id: 100
+        name: Lab_Students

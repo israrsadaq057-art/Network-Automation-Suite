@@ -1,0 +1,287 @@
+---
+# ============================================================
+# Network Device Firmware Update Playbook
+# Automated network device firmware upgrades
+# Network Engineer: Israr Sadaq
+# ⚠️ WARNING: This playbook will reload devices!
+# ============================================================
+
+- name: Firmware Update - Pre-Checks
+  hosts: all
+  gather_facts: no
+  vars:
+    firmware_dir: "/firmware"
+    new_version: "16.12.05"
+    
+  tasks:
+    # Task 1: Check current firmware version
+    - name: Check current firmware version
+      cisco.ios.ios_command:
+        commands:
+          - show version | include Version
+      register: version_output
+      tags: precheck
+
+    # Task 2: Display current version
+    - name: Display current version
+      debug:
+        msg: "Device: {{ inventory_hostname }} - Current: {{ version_output.stdout[0] }}"
+      tags: precheck
+
+    # Task 3: Check if update is needed
+    - name: Determine if update needed
+      set_fact:
+        update_needed: "{{ new_version not in version_output.stdout[0] }}"
+      tags: precheck
+
+    # Task 4: Skip if already on correct version
+    - name: Skip device if already updated
+      meta: end_host
+      when: not update_needed
+      tags: precheck
+
+
+- name: Firmware Update - Prepare
+  hosts: all
+  gather_facts: no
+  vars:
+    firmware_dir: "/firmware"
+    new_version: "16.12.05"
+    
+  tasks:
+    # Task 1: Verify firmware file exists on TFTP server
+    - name: Check firmware file on TFTP server
+      stat:
+        path: "{{ firmware_dir }}/ios_{{ new_version }}.bin"
+      delegate_to: localhost
+      register: firmware_file
+      tags: prepare
+
+    # Task 2: Fail if firmware not found
+    - name: Fail if firmware not found
+      fail:
+        msg: "⚠️ Firmware file not found: {{ firmware_dir }}/ios_{{ new_version }}.bin"
+      when: not firmware_file.stat.exists
+      tags: prepare
+
+    # Task 3: Verify device has enough flash space
+    - name: Check flash space
+      cisco.ios.ios_command:
+        commands:
+          - show flash: | include bytes free
+      register: flash_space
+      tags: prepare
+
+    # Task 4: Display flash space
+    - name: Show flash space
+      debug:
+        var: flash_space.stdout_lines
+      tags: prepare
+
+
+- name: Firmware Update - Transfer
+  hosts: all
+  gather_facts: no
+  vars:
+    firmware_dir: "/firmware"
+    new_version: "16.12.05"
+    
+  tasks:
+    # Task 1: Confirm before transfer
+    - name: Confirm firmware transfer
+      pause:
+        prompt: "Ready to transfer firmware to {{ inventory_hostname }}? (yes/no)"
+      register: transfer_confirm
+      tags: transfer
+
+    # Task 2: Copy firmware to device
+    - name: Copy firmware to device flash
+      cisco.ios.ios_command:
+        commands:
+          - "copy tftp://{{ ansible_host }}{{ firmware_dir }}/ios_{{ new_version }}.bin flash:"
+        wait_for: 
+          - "result 0"
+        timeout: 600
+      when: transfer_confirm.user_input == "yes"
+      tags: transfer
+
+    # Task 3: Verify firmware transferred
+    - name: Verify firmware on device
+      cisco.ios.ios_command:
+        commands:
+          - "show flash: | include ios_{{ new_version }}"
+      register: verify_transfer
+      tags: transfer
+
+    # Task 4: Show verification result
+    - name: Display transfer result
+      debug:
+        msg: "✓ Firmware transferred successfully to {{ inventory_hostname }}"
+      when: new_version in verify_transfer.stdout[0]
+      tags: transfer
+
+
+- name: Firmware Update - Configure Boot
+  hosts: all
+  gather_facts: no
+  vars:
+    new_version: "16.12.05"
+    
+  tasks:
+    # Task 1: Set boot image
+    - name: Configure boot image
+      cisco.ios.ios_config:
+        lines:
+          - "boot system flash:ios_{{ new_version }}.bin"
+          - "no boot system flash:"
+      tags: boot
+
+    # Task 2: Verify boot variable
+    - name: Verify boot configuration
+      cisco.ios.ios_command:
+        commands:
+          - show boot
+      register: boot_output
+      tags: boot
+
+    # Task 3: Display boot configuration
+    - name: Show boot configuration
+      debug:
+        var: boot_output.stdout_lines
+      tags: boot
+
+    # Task 4: Save configuration
+    - name: Save running config
+      cisco.ios.ios_config:
+        save_when: always
+      tags: boot
+
+
+- name: Firmware Update - Reload
+  hosts: all
+  gather_facts: no
+  vars:
+    reload_delay: 10
+    
+  tasks:
+    # Task 1: Final confirmation before reload
+    - name: Confirm device reload
+      pause:
+        prompt: |
+          ========================================
+          ⚠️  WARNING: Device {{ inventory_hostname }} will reload in {{ reload_delay }} seconds!
+          ⚠️  This will cause network interruption!
+          
+          Type 'yes' to proceed, 'no' to cancel: 
+          ========================================
+      register: reload_confirm
+      tags: reload
+
+    # Task 2: Schedule reload
+    - name: Schedule device reload
+      cisco.ios.ios_command:
+        commands:
+          - "reload in {{ reload_delay }}"
+      when: reload_confirm.user_input == "yes"
+      tags: reload
+
+    # Task 3: Display reload status
+    - name: Display reload status
+      debug:
+        msg: "⚠️ Device {{ inventory_hostname }} will reload in {{ reload_delay }} seconds"
+      when: reload_confirm.user_input == "yes"
+      tags: reload
+
+    - name: Skip reload
+      debug:
+        msg: "✗ Reload cancelled for {{ inventory_hostname }}"
+      when: reload_confirm.user_input != "yes"
+      tags: reload
+
+
+- name: Firmware Update - Post-Update Verification
+  hosts: all
+  gather_facts: no
+  vars:
+    new_version: "16.12.05"
+    wait_time: 120
+    
+  tasks:
+    # Task 1: Wait for device to come back
+    - name: Wait for device to come back online
+      wait_for:
+        host: "{{ ansible_host }}"
+        port: 22
+        timeout: "{{ wait_time }}"
+        delay: 30
+      delegate_to: localhost
+      tags: verify
+
+    # Task 2: Check new firmware version
+    - name: Verify new firmware version
+      cisco.ios.ios_command:
+        commands:
+          - show version | include Version
+      register: new_version_output
+      tags: verify
+
+    # Task 3: Display update result
+    - name: Display update result
+      debug:
+        msg: |
+          ========================================
+          ✅ FIRMWARE UPDATE COMPLETE - {{ inventory_hostname }}
+          ========================================
+          New Version: {{ new_version_output.stdout[0] }}
+          Status: SUCCESS
+          ========================================
+      when: new_version in new_version_output.stdout[0]
+      tags: verify
+
+    # Task 4: Show failure if version mismatch
+    - name: Update failed
+      debug:
+        msg: "✗ Firmware update failed for {{ inventory_hostname }}. Version mismatch!"
+      when: new_version not in new_version_output.stdout[0]
+      tags: verify
+
+
+- name: Firmware Update - Summary Report
+  hosts: localhost
+  gather_facts: no
+  vars:
+    report_dir: "/reports/firmware_updates"
+    date: "{{ ansible_date_time.date }}"
+    
+  tasks:
+    # Task 1: Create report directory
+    - name: Create report directory
+      file:
+        path: "{{ report_dir }}"
+        state: directory
+        mode: '0755'
+      tags: report
+
+    # Task 2: Generate summary report
+    - name: Generate firmware update report
+      copy:
+        content: |
+          ========================================
+          FIRMWARE UPDATE SUMMARY - {{ date }}
+          ========================================
+          Target Version: {{ new_version }}
+          Executed by: Israr Sadaq
+          
+          Results:
+          {% for host in groups['all'] %}
+          - {{ host }}: {{ hostvars[host].new_version_output.stdout[0] if hostvars[host].new_version_output is defined else 'Not Verified' }}
+          {% endfor %}
+          ========================================
+        dest: "{{ report_dir }}/firmware_update_{{ date }}.txt"
+      tags: report
+
+    # Task 3: Show summary
+    - name: Display summary
+      debug:
+        msg: "✓ Firmware update report saved to {{ report_dir }}/firmware_update_{{ date }}.txt"
+      tags: report

@@ -1,0 +1,315 @@
+{
+  "title": "Network Automation Suite - Complete Dashboard",
+  "uid": "network-automation-dashboard",
+  "timezone": "browser",
+  "editable": true,
+  "refresh": "30s",
+  "panels": [
+    {
+      "title": "🏢 Network Overview",
+      "type": "row",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 0},
+      "collapsed": false
+    },
+    {
+      "title": "Device Status",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 4, "x": 0, "y": 1},
+      "targets": [
+        {"expr": "count(up == 1)", "legendFormat": "Up", "refId": "A"},
+        {"expr": "count(up == 0)", "legendFormat": "Down", "refId": "B"}
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "thresholds": {
+            "steps": [
+              {"color": "green", "value": 0}
+            ]
+          },
+          "mappings": [
+            {"type": "value", "value": "0", "text": "All Devices Down"},
+            {"type": "range", "from": 1, "to": 100, "text": "Devices Online"}
+          ]
+        }
+      }
+    },
+    {
+      "title": "Network Uptime",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 4, "x": 4, "y": 1},
+      "targets": [
+        {"expr": "(avg(up) * 100)", "legendFormat": "Uptime %"}
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": {
+            "steps": [
+              {"color": "red", "value": 0},
+              {"color": "yellow", "value": 95},
+              {"color": "green", "value": 99}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "title": "Active Alerts",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 4, "x": 8, "y": 1},
+      "targets": [
+        {"expr": "count(ALERTS{alertstate='firing'})", "legendFormat": "Active Alerts"}
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "thresholds": {
+            "steps": [
+              {"color": "green", "value": 0},
+              {"color": "yellow", "value": 1},
+              {"color": "red", "value": 3}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "title": "Total Devices",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 4, "x": 12, "y": 1},
+      "targets": [
+        {"expr": "count(up)", "legendFormat": "Total Devices"}
+      ]
+    },
+    {
+      "title": "Average Latency",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 4, "x": 16, "y": 1},
+      "targets": [
+        {"expr": "avg(network_latency_ms)", "legendFormat": "Avg Latency"}
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "thresholds": {
+            "steps": [
+              {"color": "green", "value": 0},
+              {"color": "yellow", "value": 50},
+              {"color": "red", "value": 100}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "title": "Network Performance",
+      "type": "row",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 5},
+      "collapsed": false
+    },
+    {
+      "title": "Latency Overview",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 6},
+      "targets": [
+        {"expr": "network_latency_ms", "legendFormat": "{{source}} → {{destination}}", "refId": "A"}
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "decimals": 2
+        }
+      },
+      "options": {
+        "legend": {"calcs": ["mean", "max", "last"]}
+      }
+    },
+    {
+      "title": "Jitter Analysis",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 6},
+      "targets": [
+        {"expr": "network_jitter_ms", "legendFormat": "{{source}} → {{destination}}"}
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "decimals": 2
+        }
+      }
+    },
+    {
+      "title": "Throughput (Mbps)",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 14},
+      "targets": [
+        {"expr": "network_throughput_mbps", "legendFormat": "{{source}} → {{destination}}"}
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Mbps",
+          "decimals": 0
+        }
+      }
+    },
+    {
+      "title": "Packet Loss",
+      "type": "graph",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 14},
+      "targets": [
+        {"expr": "packet_loss_percent", "legendFormat": "{{source}} → {{destination}}"}
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 2,
+          "thresholds": {
+            "steps": [
+              {"color": "green", "value": 0},
+              {"color": "yellow", "value": 1},
+              {"color": "red", "value": 5}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "title": "Device Metrics",
+      "type": "row",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 22},
+      "collapsed": false
+    },
+    {
+      "title": "CPU Usage - Core Switches",
+      "type": "gauge",
+      "gridPos": {"h": 6, "w": 4, "x": 0, "y": 23},
+      "targets": [
+        {"expr": "cisco_cpu_5min", "legendFormat": "{{instance}}"}
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "steps": [
+              {"color": "green", "value": 0},
+              {"color": "yellow", "value": 70},
+              {"color": "red", "value": 85}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "title": "Memory Usage",
+      "type": "gauge",
+      "gridPos": {"h": 6, "w": 4, "x": 4, "y": 23},
+      "targets": [
+        {"expr": "(cisco_memory_used / cisco_memory_total) * 100", "legendFormat": "{{instance}}"}
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100
+        }
+      }
+    },
+    {
+      "title": "Interface Status",
+      "type": "table",
+      "gridPos": {"h": 6, "w": 8, "x": 8, "y": 23},
+      "targets": [
+        {"expr": "ifOperStatus", "format": "table"}
+      ],
+      "transformations": [
+        {"id": "organize", "options": {"excludeByName": {"Time": true}}}
+      ]
+    },
+    {
+      "title": "Bandwidth Utilization",
+      "type": "graph",
+      "gridPos": {"h": 6, "w": 8, "x": 16, "y": 23},
+      "targets": [
+        {"expr": "rate(ifInOctets[5m]) * 8", "legendFormat": "{{instance}} - In"},
+        {"expr": "rate(ifOutOctets[5m]) * 8", "legendFormat": "{{instance}} - Out"}
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bps",
+          "decimals": 0
+        }
+      }
+    },
+    {
+      "title": "Active Alerts",
+      "type": "row",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 29},
+      "collapsed": false
+    },
+    {
+      "title": "Critical Alerts",
+      "type": "alertlist",
+      "gridPos": {"h": 6, "w": 12, "x": 0, "y": 30},
+      "options": {
+        "show": "current",
+        "sortOrder": 1,
+        "stateFilter": ["alerting", "firing"],
+        "folderId": null
+      }
+    },
+    {
+      "title": "Recent Alerts History",
+      "type": "table",
+      "gridPos": {"h": 6, "w": 12, "x": 12, "y": 30},
+      "targets": [
+        {"expr": "ALERTS", "format": "table"}
+      ]
+    },
+    {
+      "title": "Automation Status",
+      "type": "row",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 36},
+      "collapsed": false
+    },
+    {
+      "title": "ZTP Deployment Status",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 4, "x": 0, "y": 37},
+      "targets": [
+        {"expr": "ztp_deployments_total", "legendFormat": "Total Deployments"},
+        {"expr": "ztp_deployments_success", "legendFormat": "Successful"}
+      ]
+    },
+    {
+      "title": "Last Automation Run",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 4, "x": 4, "y": 37},
+      "targets": [
+        {"expr": "time() - automation_last_run_timestamp", "legendFormat": "Seconds ago"}
+      ]
+    },
+    {
+      "title": "Ansible Playbook Status",
+      "type": "table",
+      "gridPos": {"h": 4, "w": 8, "x": 8, "y": 37},
+      "targets": [
+        {"expr": "ansible_playbook_status", "format": "table"}
+      ]
+    },
+    {
+      "title": "Performance Test Results",
+      "type": "table",
+      "gridPos": {"h": 4, "w": 8, "x": 16, "y": 37},
+      "targets": [
+        {"expr": "performance_test_results", "format": "table"}
+      ]
+    }
+  ],
+  "tags": ["network", "automation", "monitoring"],
+  "time": {"from": "now-6h", "to": "now"},
+  "schemaVersion": 27,
+  "version": 1
+}

@@ -1,0 +1,91 @@
+# ============================================================
+# Prometheus Configuration - Network Monitoring
+# Network Engineer: Israr Sadaq
+# Real-time telemetry collection for network devices
+# ============================================================
+
+global:
+  scrape_interval: 15s      # How often to scrape targets
+  evaluation_interval: 15s  # How often to evaluate rules
+  scrape_timeout: 10s       # Timeout for scraping
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+
+# Rule files for alerts
+rule_files:
+  - "alerts.yml"
+
+# Scrape configurations
+scrape_configs:
+  # 1. SNMP Exporter - Network Devices
+  - job_name: 'snmp_network_devices'
+    static_configs:
+      - targets:
+        - 10.10.10.1        # Core Switch
+        - 10.10.10.11       # Distribution Switch Floor 1
+        - 10.10.10.12       # Distribution Switch Floor 2
+        - 10.10.10.101      # Access Switch Lab-101
+        - 10.10.10.102      # Access Switch Lab-102
+        - 10.10.10.10       # Domain Controller
+        - 10.10.10.20       # File Server
+        - 10.10.10.30       # Web Server
+    metrics_path: /snmp
+    params:
+      module: [if_mib, cisco_mib]
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: snmp-exporter:9116
+
+  # 2. Node Exporter - Server Metrics
+  - job_name: 'node_exporter'
+    static_configs:
+      - targets:
+        - 10.10.10.10:9100   # DC01
+        - 10.10.10.20:9100   # FS01
+        - 10.10.10.30:9100   # WEB01
+        - 10.10.10.40:9100   # MON01
+        - 10.10.10.50:9100   # DB01
+        - 10.10.10.60:9100   # BACKUP01
+
+  # 3. Blackbox Exporter - External Monitoring
+  - job_name: 'blackbox'
+    metrics_path: /probe
+    params:
+      module: [icmp, http_2xx, tcp_connect]
+    static_configs:
+      - targets:
+        - 10.10.10.1         # Core Switch
+        - 10.10.10.10        # DC01
+        - 8.8.8.8            # Google DNS
+        - 1.1.1.1            # Cloudflare DNS
+        - google.com
+        - github.com
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - target_label: instance
+        replacement: blackbox
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+
+  # 4. Self-Monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets:
+        - localhost:9090
+
+  # 5. Custom Network Metrics
+  - job_name: 'network_automation'
+    static_configs:
+      - targets:
+        - automation:8080
+    metrics_path: /metrics

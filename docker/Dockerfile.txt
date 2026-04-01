@@ -1,0 +1,58 @@
+# ============================================================
+# Network Automation Suite - Docker Container
+# Network Engineer: Israr Sadaq
+# Complete automation environment in a container
+# ============================================================
+
+FROM python:3.9-slim
+
+LABEL maintainer="Israr Sadaq"
+LABEL description="Network Automation Suite - ZTP, Ansible, Performance Testing"
+LABEL version="1.0.0"
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
+ENV ANSIBLE_HOST_KEY_CHECKING=False
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    openssh-client \
+    sshpass \
+    curl \
+    wget \
+    iputils-ping \
+    net-tools \
+    iperf3 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+COPY requirements.txt /tmp/
+RUN pip install --no-cache-dir -r /tmp/requirements.txt
+
+# Install Ansible
+RUN pip install ansible ansible-lint
+
+# Create working directory
+WORKDIR /opt/network-automation
+
+# Copy all project files
+COPY ztp/ /opt/network-automation/ztp/
+COPY ansible/ /opt/network-automation/ansible/
+COPY monitoring/ /opt/network-automation/monitoring/
+COPY performance/ /opt/network-automation/performance/
+COPY inventory/ /opt/network-automation/inventory/
+COPY scripts/ /opt/network-automation/scripts/
+
+# Create necessary directories
+RUN mkdir -p /opt/network-automation/logs \
+    /opt/network-automation/reports \
+    /opt/network-automation/backups
+
+# Set permissions
+RUN chmod +x /opt/network-automation/scripts/*.sh 2>/dev/null || true
+
+# Set entrypoint
+ENTRYPOINT ["/bin/bash"]
+CMD ["/bin/bash"]

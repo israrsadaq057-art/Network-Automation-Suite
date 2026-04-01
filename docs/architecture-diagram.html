@@ -1,0 +1,828 @@
+ <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Network Automation Suite | Complete Architecture | Israr Sadaq</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Inter', 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #0a0f1a 0%, #0f172a 100%);
+            min-height: 100vh;
+            padding: 30px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            animation: fadeInDown 0.6s ease;
+        }
+
+        .header h1 {
+            font-size: 36px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #fff, #ffd966);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        .header .subtitle {
+            color: #94a3b8;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+
+        .badge-container {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            background: rgba(255,215,0,0.15);
+            padding: 6px 16px;
+            border-radius: 30px;
+            font-size: 12px;
+            color: #ffd966;
+            border: 1px solid rgba(255,215,0,0.3);
+        }
+
+        /* Main Grid - 3x2 Layout */
+        .diagram-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        /* Card Styles */
+        .card {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            border: 1px solid rgba(255,255,255,0.1);
+            overflow: hidden;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            animation: fadeInUp 0.6s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-8px);
+            border-color: #ffd966;
+            box-shadow: 0 20px 30px rgba(0,0,0,0.3);
+        }
+
+        .card-header {
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .card-header.ztp { background: linear-gradient(135deg, #dc2626, #ef4444); }
+        .card-header.ansible { background: linear-gradient(135deg, #f97316, #fb923c); }
+        .card-header.monitoring { background: linear-gradient(135deg, #22c55e, #4ade80); }
+        .card-header.performance { background: linear-gradient(135deg, #06b6d4, #22d3ee); }
+        .card-header.docker { background: linear-gradient(135deg, #8b5cf6, #a78bfa); }
+        .card-header.cicd { background: linear-gradient(135deg, #6b7280, #9ca3af); }
+
+        .card-icon {
+            font-size: 40px;
+        }
+
+        .card-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: white;
+        }
+
+        .card-subtitle {
+            font-size: 11px;
+            opacity: 0.8;
+            margin-top: 4px;
+        }
+
+        .card-body {
+            padding: 20px;
+        }
+
+        .tech-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .tech-tag {
+            background: rgba(255,255,255,0.1);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 10px;
+            color: #e2e8f0;
+            font-family: monospace;
+        }
+
+        .description {
+            font-size: 12px;
+            color: #cbd5e1;
+            line-height: 1.5;
+            margin-bottom: 15px;
+        }
+
+        .metrics {
+            background: rgba(0,0,0,0.4);
+            border-radius: 12px;
+            padding: 12px;
+        }
+
+        .metric-item {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            margin-bottom: 6px;
+        }
+
+        .metric-label {
+            color: #94a3b8;
+        }
+
+        .metric-value {
+            color: #ffd966;
+            font-weight: bold;
+        }
+
+        /* Connection Flow Section */
+        .connection-flow {
+            background: rgba(0,0,0,0.4);
+            border-radius: 24px;
+            padding: 30px;
+            margin: 30px 0;
+        }
+
+        .flow-title {
+            text-align: center;
+            color: #ffd966;
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 25px;
+            letter-spacing: 1px;
+        }
+
+        .flow-steps {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .flow-step {
+            flex: 1;
+            min-width: 120px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 16px;
+            padding: 15px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .flow-step:hover {
+            background: rgba(255,215,0,0.1);
+            transform: translateY(-3px);
+        }
+
+        .flow-icon {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .flow-name {
+            font-size: 12px;
+            font-weight: bold;
+            color: #ffd966;
+        }
+
+        .flow-desc {
+            font-size: 9px;
+            color: #94a3b8;
+            margin-top: 5px;
+        }
+
+        .flow-arrow {
+            font-size: 24px;
+            color: #f97316;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: #0f172a;
+            border-radius: 28px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 85vh;
+            overflow-y: auto;
+            border: 1px solid #ffd966;
+            animation: modalIn 0.3s ease;
+        }
+
+        @keyframes modalIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .modal-header {
+            padding: 20px 25px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+            border-radius: 28px 28px 0 0;
+        }
+
+        .modal-header h2 {
+            color: #ffd966;
+            font-size: 22px;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 28px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .modal-close:hover {
+            color: #ffd966;
+        }
+
+        .modal-body {
+            padding: 25px;
+        }
+
+        .detail-section {
+            margin-bottom: 25px;
+        }
+
+        .detail-title {
+            font-weight: bold;
+            color: #ffd966;
+            margin-bottom: 10px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .detail-text {
+            color: #cbd5e1;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .detail-list {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .detail-list li {
+            padding: 8px 0;
+            color: #cbd5e1;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .detail-list li:last-child {
+            border-bottom: none;
+        }
+
+        .detail-list li::before {
+            content: "▹";
+            color: #ffd966;
+            font-weight: bold;
+        }
+
+        .code-block {
+            background: #1e293b;
+            padding: 12px;
+            border-radius: 12px;
+            font-family: monospace;
+            font-size: 11px;
+            color: #e2e8f0;
+            overflow-x: auto;
+            margin-top: 10px;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 30px;
+            color: #64748b;
+            font-size: 11px;
+            border-top: 1px solid rgba(255,255,255,0.05);
+            margin-top: 30px;
+        }
+
+        .footer a {
+            color: #ffd966;
+            text-decoration: none;
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 1000px) {
+            .diagram-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .flow-steps {
+                flex-direction: column;
+            }
+            .flow-arrow {
+                transform: rotate(90deg);
+            }
+        }
+
+        @media (max-width: 650px) {
+            .diagram-grid {
+                grid-template-columns: 1fr;
+            }
+            body {
+                padding: 15px;
+            }
+            .header h1 {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 NETWORK AUTOMATION SUITE</h1>
+            <div class="subtitle">Complete Infrastructure as Code (IaC) Architecture | Click any component for detailed explanation</div>
+            <div class="badge-container">
+                <span class="badge">🐍 Python</span>
+                <span class="badge">⚙️ Ansible</span>
+                <span class="badge">🐳 Docker</span>
+                <span class="badge">📊 Prometheus</span>
+                <span class="badge">📈 Grafana</span>
+                <span class="badge">🔧 GitLab CI/CD</span>
+                <span class="badge">📡 SNMP</span>
+                <span class="badge">⚡ iPerf3</span>
+                <span class="badge">🔌 Netmiko</span>
+                <span class="badge">📝 Jinja2</span>
+            </div>
+        </div>
+
+        <!-- Main Diagram Grid - 6 Components -->
+        <div class="diagram-grid">
+            <!-- 1. ZTP Component -->
+            <div class="card" onclick="showDetails('ztp')">
+                <div class="card-header ztp">
+                    <div class="card-icon">🚀</div>
+                    <div>
+                        <div class="card-title">Zero-Touch Provisioning</div>
+                        <div class="card-subtitle">Automated Device Deployment</div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="tech-tags">
+                        <span class="tech-tag">Python</span>
+                        <span class="tech-tag">Netmiko</span>
+                        <span class="tech-tag">Jinja2</span>
+                        <span class="tech-tag">YAML</span>
+                        <span class="tech-tag">SSH</span>
+                    </div>
+                    <div class="description">
+                        Automates network device configuration from scratch. New devices are detected, configured, and validated without manual intervention.
+                    </div>
+                    <div class="metrics">
+                        <div class="metric-item"><span class="metric-label">📈 Time Reduction</span><span class="metric-value">80%</span></div>
+                        <div class="metric-item"><span class="metric-label">⚡ Devices/Hour</span><span class="metric-value">50+</span></div>
+                        <div class="metric-item"><span class="metric-label">✅ Error Rate</span><span class="metric-value">0% (Automated)</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. Ansible Automation -->
+            <div class="card" onclick="showDetails('ansible')">
+                <div class="card-header ansible">
+                    <div class="card-icon">⚙️</div>
+                    <div>
+                        <div class="card-title">Ansible Automation</div>
+                        <div class="card-subtitle">Configuration Management</div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="tech-tags">
+                        <span class="tech-tag">Ansible</span>
+                        <span class="tech-tag">YAML</span>
+                        <span class="tech-tag">Jinja2</span>
+                        <span class="tech-tag">Playbooks</span>
+                    </div>
+                    <div class="description">
+                        Manages network device configurations, backups, compliance checks, and firmware updates across all network devices.
+                    </div>
+                    <div class="metrics">
+                        <div class="metric-item"><span class="metric-label">📋 Devices Managed</span><span class="metric-value">50+</span></div>
+                        <div class="metric-item"><span class="metric-label">💾 Config Backups</span><span class="metric-value">Daily Automated</span></div>
+                        <div class="metric-item"><span class="metric-label">🔒 Compliance</span><span class="metric-value">100% Enforced</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. Telemetry & Monitoring -->
+            <div class="card" onclick="showDetails('monitoring')">
+                <div class="card-header monitoring">
+                    <div class="card-icon">📊</div>
+                    <div>
+                        <div class="card-title">Telemetry & Monitoring</div>
+                        <div class="card-subtitle">Real-time Performance</div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="tech-tags">
+                        <span class="tech-tag">Prometheus</span>
+                        <span class="tech-tag">Grafana</span>
+                        <span class="tech-tag">SNMP</span>
+                        <span class="tech-tag">InfluxDB</span>
+                    </div>
+                    <div class="description">
+                        Real-time network performance monitoring with SNMP polling, metric collection, and visualization dashboards.
+                    </div>
+                    <div class="metrics">
+                        <div class="metric-item"><span class="metric-label">📈 Metrics/sec</span><span class="metric-value">10,000+</span></div>
+                        <div class="metric-item"><span class="metric-label">📊 Dashboards</span><span class="metric-value">15+</span></div>
+                        <div class="metric-item"><span class="metric-label">⚠️ Alerts</span><span class="metric-value">Real-time</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. Performance Testing -->
+            <div class="card" onclick="showDetails('performance')">
+                <div class="card-header performance">
+                    <div class="card-icon">⚡</div>
+                    <div>
+                        <div class="card-title">Performance Testing</div>
+                        <div class="card-subtitle">Latency & Jitter Analysis</div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="tech-tags">
+                        <span class="tech-tag">iPerf3</span>
+                        <span class="tech-tag">Python</span>
+                        <span class="tech-tag">Traffic Gen</span>
+                        <span class="tech-tag">BERT</span>
+                    </div>
+                    <div class="description">
+                        Automated latency, jitter, throughput, and packet loss measurement across network paths. Daily 100+ test scenarios.
+                    </div>
+                    <div class="metrics">
+                        <div class="metric-item"><span class="metric-label">📊 Tests/Day</span><span class="metric-value">100+</span></div>
+                        <div class="metric-item"><span class="metric-label">⏱️ Latency Accuracy</span><span class="metric-value">±0.1ms</span></div>
+                        <div class="metric-item"><span class="metric-label">📈 Max Throughput</span><span class="metric-value">10 Gbps</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 5. Containerization -->
+            <div class="card" onclick="showDetails('docker')">
+                <div class="card-header docker">
+                    <div class="card-icon">🐳</div>
+                    <div>
+                        <div class="card-title">Containerization</div>
+                        <div class="card-subtitle">Portable Environments</div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="tech-tags">
+                        <span class="tech-tag">Docker</span>
+                        <span class="tech-tag">docker-compose</span>
+                        <span class="tech-tag">Kubernetes</span>
+                    </div>
+                    <div class="description">
+                        Containerized automation tools for portable, scalable, and reproducible network testing and deployment environments.
+                    </div>
+                    <div class="metrics">
+                        <div class="metric-item"><span class="metric-label">🐳 Containers</span><span class="metric-value">6+</span></div>
+                        <div class="metric-item"><span class="metric-label">🔄 Reproducible</span><span class="metric-value">100%</span></div>
+                        <div class="metric-item"><span class="metric-label">⚡ 1-Command Setup</span><span class="metric-value">Yes</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 6. CI/CD Pipeline -->
+            <div class="card" onclick="showDetails('cicd')">
+                <div class="card-header cicd">
+                    <div class="card-icon">🔄</div>
+                    <div>
+                        <div class="card-title">CI/CD Pipeline</div>
+                        <div class="card-subtitle">Automated Deployment</div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="tech-tags">
+                        <span class="tech-tag">GitLab CI/CD</span>
+                        <span class="tech-tag">GitHub Actions</span>
+                        <span class="tech-tag">Git</span>
+                    </div>
+                    <div class="description">
+                        Automated validation, deployment, testing, and monitoring pipeline. Every code change triggers automated workflows.
+                    </div>
+                    <div class="metrics">
+                        <div class="metric-item"><span class="metric-label">⚡ Deploy Time</span><span class="metric-value">5 min</span></div>
+                        <div class="metric-item"><span class="metric-label">✅ Tests Pass</span><span class="metric-value">100%</span></div>
+                        <div class="metric-item"><span class="metric-label">📦 Version Control</span><span class="metric-value">Git</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Connection Flow - How Everything Connects -->
+        <div class="connection-flow">
+            <div class="flow-title">🔄 HOW IT ALL CONNECTS & WORKS TOGETHER</div>
+            <div class="flow-steps">
+                <div class="flow-step">
+                    <div class="flow-icon">📝</div>
+                    <div class="flow-name">1. Code Commit</div>
+                    <div class="flow-desc">YAML/Python in Git</div>
+                </div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step">
+                    <div class="flow-icon">🔍</div>
+                    <div class="flow-name">2. CI/CD Pipeline</div>
+                    <div class="flow-desc">Validate & Test</div>
+                </div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step">
+                    <div class="flow-icon">🚀</div>
+                    <div class="flow-name">3. ZTP Deployment</div>
+                    <div class="flow-desc">Configure Devices</div>
+                </div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step">
+                    <div class="flow-icon">📊</div>
+                    <div class="flow-name">4. Telemetry</div>
+                    <div class="flow-desc">Monitor Performance</div>
+                </div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step">
+                    <div class="flow-icon">⚡</div>
+                    <div class="flow-name">5. Performance Tests</div>
+                    <div class="flow-desc">Latency/Jitter Analysis</div>
+                </div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step">
+                    <div class="flow-icon">📈</div>
+                    <div class="flow-name">6. Dashboards</div>
+                    <div class="flow-desc">Grafana Visualization</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>Network Automation Suite | Infrastructure as Code (IaC) | Designed by <strong>Israr Sadaq</strong></p>
+            <p>CCNA | CCNP | Network Automation Specialist | Berlin, Germany</p>
+            <p>📧 israrsadaq057@gmail.com | 🐙 github.com/israrsadaq057-art</p>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Component Details</h2>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="modalBody"></div>
+        </div>
+    </div>
+
+    <script>
+        // Complete details for each component
+        const componentDetails = {
+            ztp: {
+                title: "Zero-Touch Provisioning (ZTP)",
+                purpose: "Automated network device deployment without manual configuration",
+                howItWorks: "When a new device connects, it's automatically detected via CDP/LLDP. Python scripts generate configuration from Jinja2 templates and deploy via SSH using Netmiko. Post-deployment validation ensures correct configuration.",
+                whyConnected: "Connects to Git for version control, Ansible for ongoing management, and Monitoring for status tracking. Configuration templates are stored in Git, deployed via CI/CD.",
+                technologies: ["Python", "Netmiko", "Jinja2", "YAML", "SSH", "CDP/LLDP"],
+                impact: "80% reduction in deployment time, 0 manual errors, consistent configurations across all devices",
+                details: [
+                    "Automatic device discovery via CDP/LLDP",
+                    "Configuration generation from Jinja2 templates",
+                    "Parallel deployment to multiple devices (ThreadPoolExecutor)",
+                    "Automated SSH connection with Netmiko",
+                    "Post-deployment configuration validation",
+                    "Configuration versioning in Git"
+                ],
+                codeExample: "python ztp_deploy.py inventory/devices.yml"
+            },
+            ansible: {
+                title: "Ansible Automation",
+                purpose: "Configuration management, compliance enforcement, and automation at scale",
+                howItWorks: "Ansible playbooks define desired state. Idempotent operations ensure devices match configuration without unnecessary changes. Modules handle Cisco IOS, Juniper JunOS, and more.",
+                whyConnected: "Pulls configurations from Git, pushes changes to devices, reports status to Prometheus. Works with ZTP for initial deployment and ongoing management.",
+                technologies: ["Ansible", "YAML", "Jinja2", "SSH", "REST APIs", "Cisco IOS"],
+                impact: "Automated daily backups, 100% compliance enforcement, configuration drift detection and remediation",
+                details: [
+                    "Daily automated configuration backups with timestamps",
+                    "Compliance checking against security standards (PCI-DSS, ISO 27001)",
+                    "Bulk firmware updates across 50+ devices",
+                    "Configuration drift detection and automatic remediation",
+                    "Dynamic inventory management",
+                    "Role-based configuration for different device types"
+                ],
+                codeExample: "ansible-playbook ansible/playbooks/site.yml -i inventory/hosts.ini"
+            },
+            monitoring: {
+                title: "Telemetry & Monitoring",
+                purpose: "Real-time network performance and availability monitoring with alerting",
+                howItWorks: "SNMP polling collects metrics from network devices. Prometheus scrapes metrics, stores time-series data. Grafana visualizes dashboards. Alertmanager sends notifications.",
+                whyConnected: "Receives data from all network devices, sends alerts to Slack/Email, feeds performance dashboards. Integrated with CI/CD for dashboard updates.",
+                technologies: ["Prometheus", "Grafana", "SNMP", "InfluxDB", "Alertmanager", "Blackbox Exporter"],
+                impact: "Proactive issue detection before user impact, historical trend analysis for capacity planning, 99.9% SLA achievement",
+                details: [
+                    "SNMP polling of 50+ network devices (CPU, memory, interface stats)",
+                    "Prometheus metric collection (10,000+ metrics per second)",
+                    "Grafana dashboards with real-time visualization",
+                    "Alert rules for latency, packet loss, device down, interface errors",
+                    "Long-term storage in InfluxDB for trend analysis",
+                    "Blackbox exporter for external endpoint monitoring"
+                ],
+                codeExample: "docker-compose -f docker/docker-compose.yml up -d"
+            },
+            performance: {
+                title: "Performance Testing",
+                purpose: "Automated latency, jitter, throughput, and packet loss measurement",
+                howItWorks: "Python orchestrates iPerf3 tests between network endpoints. Results are collected, analyzed, and stored. Threshold violations trigger alerts.",
+                whyConnected: "Tests all critical network paths, reports metrics to Prometheus, triggers alerts for SLA violations. Feeds into Grafana dashboards.",
+                technologies: ["Python", "iPerf3", "Traffic Generators", "BERT", "Scapy"],
+                impact: "100+ automated tests daily, sub-millisecond latency detection, early identification of performance degradation",
+                details: [
+                    "Automated iPerf3 tests across all network paths every 15 minutes",
+                    "Latency and jitter measurement with 0.1ms accuracy",
+                    "Throughput testing up to 10Gbps",
+                    "Bit Error Rate (BER) analysis for optical links",
+                    "Automated performance reports with trend analysis",
+                    "SLA violation alerts (latency > 100ms, packet loss > 1%)"
+                ],
+                codeExample: "python performance/latency_framework.py --duration 300"
+            },
+            docker: {
+                title: "Containerization",
+                purpose: "Portable, reproducible automation environments for consistent deployment",
+                howItWorks: "All tools packaged in Docker containers with dependencies. docker-compose orchestrates multi-container setup. Images versioned in container registry.",
+                whyConnected: "Hosts all automation tools (ZTP, Ansible, Prometheus, Grafana). Ensures consistency across development, staging, and production environments.",
+                technologies: ["Docker", "docker-compose", "Kubernetes", "Container Registry", "Alpine Linux"],
+                impact: "One-command deployment, consistent across all environments, easy scaling, isolated dependencies",
+                details: [
+                    "Containerized Python automation scripts",
+                    "Ansible control container with all dependencies",
+                    "Prometheus and Grafana containers for monitoring",
+                    "SNMP and Blackbox exporters containers",
+                    "Complete stack with single docker-compose command",
+                    "Images versioned and stored in GitLab Container Registry"
+                ],
+                codeExample: "cd docker && docker-compose up -d"
+            },
+            cicd: {
+                title: "CI/CD Pipeline",
+                purpose: "Automated validation, testing, and deployment of infrastructure code",
+                howItWorks: "Git triggers pipeline on code changes. Linting validates YAML. Tests run in staging. Deployment to production on main branch merge.",
+                whyConnected: "Orchestrates all components, ensures quality before deployment, automates releases. Integrates with GitLab for version control.",
+                technologies: ["GitLab CI/CD", "GitHub Actions", "Git", "Unit Tests", "Integration Tests"],
+                impact: "5-minute deployment from commit to production, 100% test pass rate, full version control and audit trail",
+                details: [
+                    "Validate YAML syntax on merge requests",
+                    "Test configurations in staging environment",
+                    "Deploy to production on main branch merge",
+                    "Run performance tests after deployment",
+                    "Update monitoring dashboards automatically",
+                    "Rollback on failure with one-click"
+                ],
+                codeExample: "git push origin main"
+            }
+        };
+
+        function showDetails(component) {
+            const data = componentDetails[component];
+            if (!data) return;
+
+            const modal = document.getElementById('modal');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalBody = document.getElementById('modalBody');
+
+            modalTitle.textContent = data.title;
+
+            let html = `
+                <div class="detail-section">
+                    <div class="detail-title">🎯 PURPOSE</div>
+                    <div class="detail-text">${data.purpose}</div>
+                </div>
+                <div class="detail-section">
+                    <div class="detail-title">⚙️ HOW IT WORKS</div>
+                    <div class="detail-text">${data.howItWorks}</div>
+                </div>
+                <div class="detail-section">
+                    <div class="detail-title">🔗 WHY IT'S CONNECTED HERE</div>
+                    <div class="detail-text">${data.whyConnected}</div>
+                </div>
+                <div class="detail-section">
+                    <div class="detail-title">🛠️ TECHNOLOGIES USED</div>
+                    <div class="tech-tags" style="margin-top: 8px;">
+                        ${data.technologies.map(tech => `<span class="tech-tag" style="background: rgba(255,215,0,0.2);">${tech}</span>`).join('')}
+                    </div>
+                </div>
+                <div class="detail-section">
+                    <div class="detail-title">📊 IMPACT & RESULTS</div>
+                    <div class="detail-text">${data.impact}</div>
+                </div>
+                <div class="detail-section">
+                    <div class="detail-title">📋 KEY DETAILS</div>
+                    <ul class="detail-list">
+                        ${data.details.map(detail => `<li>${detail}</li>`).join('')}
+                    </ul>
+                </div>
+                <div class="detail-section">
+                    <div class="detail-title">💻 EXAMPLE COMMAND</div>
+                    <div class="code-block">${data.codeExample}</div>
+                </div>
+            `;
+
+            modalBody.innerHTML = html;
+            modal.style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('modal').style.display = 'none';
+        }
+
+        window.onclick = function(event) {
+            const modal = document.getElementById('modal');
+            if (event.target === modal) closeModal();
+        };
+    </script>
+</body>
+</html>

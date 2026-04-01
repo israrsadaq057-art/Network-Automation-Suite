@@ -1,0 +1,25 @@
+﻿# Docker
+docker/prometheus_data/
+docker/grafana_data/
+docker/alertmanager_data/
+
+# Logs
+*.log
+logs/
+**/logs/
+
+# Reports
+performance/reports/
+reports/
+
+# Backups
+backups/
+*.backup
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
